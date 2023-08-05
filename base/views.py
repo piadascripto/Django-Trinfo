@@ -121,7 +121,7 @@ def addBrokerage(request):
 			brokerage = form.save(commit=False)
 			brokerage.user = request.user
 			brokerage.save()
-			return redirect('profile', username=request.user.username))
+			return redirect('profile', username=request.user.username)
 	context = {'form': form}
 	return render(request, 'base/brokerage_form.html', context)
 
@@ -138,7 +138,7 @@ def updateBrokerage(request, pk):
 		form = BrokerageForm(request.POST, instance=brokerage)
 		if form.is_valid():
 			form.save()
-			return redirect('profile', username=request.user.username))
+			return redirect('profile', username=request.user.username)
 	context = {'form': form}
 	return render(request, 'base/brokerage_form.html', context)
 
@@ -152,7 +152,7 @@ def deleteBrokerage(request, pk):
 
 	if request.method == 'POST':
 		brokerage.delete()
-		return redirect('profile', username=request.user.username))
+		return redirect('profile', username=request.user.username)
 	context = {'obj': brokerage}
 	return render(request, 'base/delete.html', context)
 
