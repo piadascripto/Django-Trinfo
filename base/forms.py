@@ -5,3 +5,4 @@ class BrokerageForm(ModelForm):
 	class Meta:
 		model = Brokerage
 		fields = '__all__'
+		exclude = ['user']

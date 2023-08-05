@@ -1,0 +1,44 @@
+{% extends 'main.html' %}
+{% block content %}
+<h1>Trinfo - @{{user.username}} {{user.id}}</h1>
+
+
+{% if user.is_authenticated and user == request.user %}
+	<h2>Brokerages <button><a href="{% url 'add-brokerage' %}">Add connection</a></button></h2>
+
+<table>
+	<thead>
+		<tr>
+			<th>Alias</th>
+			<th>Brokerage</th>
+			<th>Created</th>
+			<th></th>
+		</tr>
+	</thead>
+  <tbody>
+    {% for brokerage in brokerage %}
+    <tr>
+    	<td><a href="/user/{{user.username}}">@{{brokerage.alias}}</a></td>
+    	<td><a href="{% url 'update-brokerage' brokerage.id %}">{{brokerage.name}}</a></td>
+    	<td><small>{{brokerage.created}}</small></td>
+		<td><button><a href="{% url 'delete-brokerage' brokerage.id %}">Delete</a></button></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+	<h2>Last Orders</h2>
+	<div>
+		{% for order in order %}
+			<div>
+				<a href="{% url 'profile' order.user.username%}"><span>@{{order.user.username}}</span></a>
+				<a href="/order/{{order.id}}"><h5>{{order.symbol}}: {{order.buy_sell}}</h5></a>
+				<small>{{order.created}}</small>
+				<hr>
+				
+			</div>
+		{% endfor %}
+	</div>
+
+{% endblock content %}

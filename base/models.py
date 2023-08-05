@@ -6,13 +6,14 @@ from django.contrib.auth.models import User
 class Brokerage(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
 	name = models.CharField(max_length=20)
+	alias = models.CharField(max_length=20, null=True)
 	login = models.CharField(max_length=100)
 	key = models.CharField(max_length=100)
 	updated = models.DateTimeField(auto_now=True)
 	created = models.DateTimeField(auto_now_add=True)
 	
 	def __str__(self):
-		return f"Brokerage: {self.name} for {self.user}"
+		return f"Brokerage: {self.name} - {self.alias}"
 
 class Order(models.Model):
 	user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)

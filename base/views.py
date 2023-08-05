@@ -50,8 +50,10 @@ def signout(request):
 
 
 def signup(request):
+	
 	if request.user.is_authenticated:
 		return redirect('home')
+		
 	form = UserCreationForm()
 	if request.method == 'POST':
 		form = UserCreationForm(request.POST)
@@ -62,20 +64,24 @@ def signup(request):
 			login(request, user)
 			return redirect('home')
 		else:
-			messages.error(request, 'Error during registration. Try again.')
+			for field, errors in form.errors.items():
+				for error in errors:
+					messages.error(request, error)
 	context = {'form': form}
 	return render(request, 'base/signup.html', context)
 
 
 # For authenticated users
-def user(request, pk):
-	user = User.objects.get(id=pk)
+def profile(request, username):
+	user = User.objects.get(username=username)
+	order = Order.objects.filter(user=user)
+	brokerage = Brokerage.objects.filter(user=user)
 
-	if request.user != user: # check if this works out
-		return HttpResponse ('You can only edit your account')
+	#if request.user != user: # check if this works out
+		#return HttpResponse ('You can only edit your account')
 
-	context = {'user': user}
-	return render(request, 'base/user.html', context)
+	context = {'user': user, 'order': order, 'brokerage': brokerage}
+	return render(request, 'base/profile.html', context)
 
 
 @login_required(login_url="signin")
@@ -101,6 +107,7 @@ def tag(request, pk):
 @login_required(login_url="signin")
 def brokerage(request, pk):
 	brokerage = Brokerage.objects.get(id=pk)
+		
 	context = {'brokerage': brokerage}
 	return render(request, 'base/brokerage.html', context)
 
@@ -111,8 +118,10 @@ def addBrokerage(request):
 	if request.method == 'POST':
 		form = BrokerageForm(request.POST)
 		if form.is_valid():
-			form.save()
-			return redirect('home')
+			brokerage = form.save(commit=False)
+			brokerage.user = request.user
+			brokerage.save()
+			return redirect('profile', username=request.user.username))
 	context = {'form': form}
 	return render(request, 'base/brokerage_form.html', context)
 
@@ -122,14 +131,14 @@ def updateBrokerage(request, pk):
 	brokerage = Brokerage.objects.get(id=pk)
 	form = BrokerageForm(instance = brokerage)
 
-	if request.user != user.brokerage:
+	if request.user != brokerage.user:
 		return HttpResponse ('You can only edit your connected brokerages')
 
 	if request.method == 'POST':
 		form = BrokerageForm(request.POST, instance=brokerage)
 		if form.is_valid():
 			form.save()
-			return redirect('home')
+			return redirect('profile', username=request.user.username))
 	context = {'form': form}
 	return render(request, 'base/brokerage_form.html', context)
 
@@ -138,12 +147,12 @@ def updateBrokerage(request, pk):
 def deleteBrokerage(request, pk):
 	brokerage = Brokerage.objects.get(id=pk)
 
-	if request.user != user.brokerage:
+	if request.user != brokerage.user:
 		return HttpResponse ('You can only delete your connected brokerages')
 
 	if request.method == 'POST':
 		brokerage.delete()
-		return redirect('home')
+		return redirect('profile', username=request.user.username))
 	context = {'obj': brokerage}
 	return render(request, 'base/delete.html', context)
 
