@@ -1,0 +1,13 @@
+{% extends 'main.html' %}
+{% block content %}
+<h1>Trinfo Tag</h1>
+        <p>This is my first web page.</p>
+        <div>It contains a 
+			{% for tag in tags %}
+				<div>
+					<a href="/tag/{{tag.name}}"><h5>{{tag.name}}</h5></a>
+				</div>
+			{% endfor %}
+        </div>
+
+{% endblock content %}

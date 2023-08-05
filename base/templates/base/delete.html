@@ -1,0 +1,12 @@
+{% extends 'main.html' %}
+{% block content %}
+<h1>Delete {{brokerage.name}}</h1>
+	<h3>Are you sure you want to delete the connection to {{brokerage.name}} / {{obj}}</h3>
+		<p>All trades from this connection will be deleted. That is no return...</p>
+    <form method="POST" action="">
+		{% csrf_token %}
+        {{ form.as_p }}
+		<a href="{{ request.META.HTTP_REFERER }}">Go back</a>
+        <button type="submit">Delete</button>
+    </form>
+{% endblock content %}

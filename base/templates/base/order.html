@@ -1,0 +1,9 @@
+{% extends 'main.html' %}
+{% block content %}
+<h1>Trinfo - Order {{order.symbol}}</h1>
+        <p>{{order.buy_sell}}</p>
+		<p>{{order.open_close}}</p>
+		<p>{{order.asset_class}}</p>
+		<p>{{order.order_price}}</p>
+
+{% endblock content %}
