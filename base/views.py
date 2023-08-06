@@ -37,7 +37,7 @@ def signin(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('home')
+            redirect('profile', username=request.user.username)
         else:
             messages.error(request, 'Username or password is wrong')
     context = {}
@@ -74,29 +74,30 @@ def signup(request):
 # For authenticated users
 
 def profile(request, username):
-	user = User.objects.get(username=username)
-	order = Order.objects.filter(user=user)
-	brokerage = Brokerage.objects.filter(user=user)
+    user = User.objects.get(username=username)
+    order = Order.objects.filter(user=user)
+    brokerage = Brokerage.objects.filter(user=user)
 
-	# Handle the POST request when the "Fetch trades" button is clicked
-	if request.method == "POST" and "run_connection" in request.POST:
-		brokerage_id = request.POST.get("brokerage_id")
-		selected_brokerage = Brokerage.objects.get(id=brokerage_id)
-		
-		# Check the name of the brokerage and call the appropriate function
-		if selected_brokerage.name == "interactive_brokers":
-			connection_interactive_brokers(selected_brokerage.login, selected_brokerage.key)
-			messages.success(request, f'Connection successfully executed for brokerage {selected_brokerage.name} - {selected_brokerage.alias}.')
-			# Update the 'updated' timestamp for the brokerage instance
-			selected_brokerage.updated = make_aware(datetime.now())
-			selected_brokerage.save()
-		else:
-			messages.error(request, f'Connection not executed correctly for  {selected_brokerage.get_name_display()} - {selected_brokerage.alias}.')
+    # Handle the POST request when the "Fetch trades" button is clicked
+    if request.method == "POST" and "run_brokerage_connection" in request.POST:
+        brokerage_id = request.POST.get("brokerage_id")
+        selected_brokerage = Brokerage.objects.get(id=brokerage_id, user=user)
+
+        # Check the name of the brokerage and call the appropriate function
+        if selected_brokerage.name == "interactive_brokers":
+            connection_interactive_brokers(user.id, selected_brokerage.login, selected_brokerage.key)
+            messages.success(request, f'Connection successfully executed for brokerage {selected_brokerage.name} - {selected_brokerage.alias}.')
+            # Update the 'updated' timestamp for the brokerage instance
+            selected_brokerage.updated = make_aware(datetime.now())
+            selected_brokerage.save()
+        else:
+            messages.error(request, f'Connection not executed correctly for  {selected_brokerage.get_name_display()} - {selected_brokerage.alias}.')
         #elif selected_brokerage.name == "another_brokerage":
-            #connection_another_brokerage(selected_brokerage.login, selected_brokerage.key)
-    
-	context = {'user': user, 'order': order, 'brokerage': brokerage}
-	return render(request, 'base/profile.html', context)
+            #connection_another_brokerage(user.id, selected_brokerage.login, selected_brokerage.key)
+
+    context = {'user': user, 'order': order, 'brokerage': brokerage}
+    return render(request, 'base/profile.html', context)
+
 
 
 

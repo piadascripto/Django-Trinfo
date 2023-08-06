@@ -28,7 +28,7 @@
 			<form method="post">
 	    		{% csrf_token %}
 				<input type="hidden" name="brokerage_id" value="{{ brokerage.id }}">
-	    		<button type="submit" name="run_connection">Fetch trades</button>
+	    		<button type="submit" name="run_brokerage_connection">Fetch trades</button>
 			</form>
 		</td>
 		<td><button><a href="{% url 'delete-brokerage' brokerage.id %}">Delete</a></button></td>

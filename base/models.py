@@ -34,8 +34,8 @@ class Brokerage(models.Model):
 		return f"Brokerage: {self.name} - {self.alias}"
 
 class Order(models.Model):
-	user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-	brokerage = models.ForeignKey(Brokerage, on_delete=models.SET_NULL, null=True)
+	user = models.ForeignKey(User, on_delete=models.CASCADE)
+	brokerage = models.ForeignKey(Brokerage, on_delete=models.CASCADE) #turn SET NULL after testing
 	client_brokerage_account_id = models.CharField(max_length=20)
 	listing_exchange = models.CharField(max_length=20)
 	asset_class = models.CharField(max_length=20)
@@ -44,9 +44,9 @@ class Order(models.Model):
 	date_time = models.DateTimeField()
 	time_zone = models.CharField(max_length=5)
 	buy_sell = models.CharField(max_length=5)
-	open_close = models.CharField(max_length=1)
+	open_close = models.CharField(max_length=5)
 	quantity = models.FloatField()
-	currency_primary = models.CharField(max_length=5)
+	currency_primary = models.CharField(max_length=8)
 	order_price = models.FloatField()
 	order_money = models.FloatField()
 	brokerage_commission = models.FloatField()
