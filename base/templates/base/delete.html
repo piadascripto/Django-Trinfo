@@ -1,7 +1,7 @@
 {% extends 'main.html' %}
 {% block content %}
-<h1>Delete {{brokerage.name}}</h1>
-	<h3>Are you sure you want to delete the connection to {{brokerage.name}} / {{obj}}</h3>
+<h1>Delete {{{ brokerage.get_name_display }}</h1>
+	<h3>Are you sure you want to delete the connection to {{{ brokerage.get_name_display }}/</h3>
 		<p>All trades from this connection will be deleted. That is no return...</p>
     <form method="POST" action="">
 		{% csrf_token %}

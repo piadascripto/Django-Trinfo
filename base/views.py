@@ -8,17 +8,17 @@ from django.contrib.auth.forms import UserCreationForm #, AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
-
+from .management.commands.connection_interactive_brokers import connection_interactive_brokers
+from datetime import datetime
+from django.utils.timezone import make_aware
 
 # Home
 
 
 def home(request):
     order = Order.objects.all()
-    brokerage = Brokerage.objects.all()
     context = {
         'order': order,       # renamed from 'order' to 'orders' for clarity
-        'brokerage': brokerage   # renamed from 'brokerage' to 'brokerages' for clarity
     }
     return render(request, 'base/home.html', context)
 
@@ -72,16 +72,32 @@ def signup(request):
 
 
 # For authenticated users
+
 def profile(request, username):
 	user = User.objects.get(username=username)
 	order = Order.objects.filter(user=user)
 	brokerage = Brokerage.objects.filter(user=user)
 
-	#if request.user != user: # check if this works out
-		#return HttpResponse ('You can only edit your account')
-
+	# Handle the POST request when the "Fetch trades" button is clicked
+	if request.method == "POST" and "run_connection" in request.POST:
+		brokerage_id = request.POST.get("brokerage_id")
+		selected_brokerage = Brokerage.objects.get(id=brokerage_id)
+		
+		# Check the name of the brokerage and call the appropriate function
+		if selected_brokerage.name == "interactive_brokers":
+			connection_interactive_brokers(selected_brokerage.login, selected_brokerage.key)
+			messages.success(request, f'Connection successfully executed for brokerage {selected_brokerage.name} - {selected_brokerage.alias}.')
+			# Update the 'updated' timestamp for the brokerage instance
+			selected_brokerage.updated = make_aware(datetime.now())
+			selected_brokerage.save()
+		else:
+			messages.error(request, f'Connection not executed correctly for  {selected_brokerage.get_name_display()} - {selected_brokerage.alias}.')
+        #elif selected_brokerage.name == "another_brokerage":
+            #connection_another_brokerage(selected_brokerage.login, selected_brokerage.key)
+    
 	context = {'user': user, 'order': order, 'brokerage': brokerage}
 	return render(request, 'base/profile.html', context)
+
 
 
 @login_required(login_url="signin")

@@ -1,7 +1,7 @@
 {% extends 'main.html' %}
 {% block content %}
-<h1>Trinfo - Brokerage {{brokerage.name}}</h1>
-        <p>{{brokerage.name}}</p>
+<h1>Trinfo - Brokerage {{ brokerage.get_name_display }}</h1>
+        <p>{{{ brokerage.get_name_display }}</p>
 		<p>{{brokerage.key}}</p>
 		<p>{{brokerage.created}}</p>
 		<p>{{brokerage.updated}}</p>

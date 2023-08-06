@@ -4,8 +4,26 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 class Brokerage(models.Model):
+	NAME_CHOICES = [
+		('interactive_brokers', 'Interactive Brokers'),
+		('tradezero', 'TradeZero'),
+		('binance', 'Binance'),
+		('coinbase', 'Coinbase'),
+		('kucoin', 'KuCoin'),
+		('bybit', 'Bybit'),
+		('okx', 'OKX'),
+		('bitstamp', 'Bitstamp'),
+		('bitfinex', 'Bitfinex'),
+		('gate_io', 'Gate.io'),
+		('gemini', 'Gemini'),
+		('bitget', 'Bitget'),
+		('huobi', 'Huobi'),
+		('mercado_bitcoin', 'Mercado Bitcoin'),
+		('foxbit', 'Foxbit'),
+		# ... add more names as needed
+	]
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
-	name = models.CharField(max_length=20)
+	name = models.CharField(max_length=20, choices=NAME_CHOICES)
 	alias = models.CharField(max_length=20, null=True)
 	login = models.CharField(max_length=100)
 	key = models.CharField(max_length=100)

@@ -1,6 +1,6 @@
 {% extends 'main.html' %}
 {% block content %}
-<h1>Trinfo - @{{user.username}} {{user.id}}</h1>
+<h1>Trinfo - @{{user.username}} </h1>
 
 
 {% if user.is_authenticated and user == request.user %}
@@ -12,15 +12,25 @@
 			<th>Alias</th>
 			<th>Brokerage</th>
 			<th>Created</th>
+			<th>Last updated</th>
+			<th></th>
 			<th></th>
 		</tr>
 	</thead>
   <tbody>
     {% for brokerage in brokerage %}
     <tr>
-    	<td><a href="/user/{{user.username}}">@{{brokerage.alias}}</a></td>
-    	<td><a href="{% url 'update-brokerage' brokerage.id %}">{{brokerage.name}}</a></td>
-    	<td><small>{{brokerage.created}}</small></td>
+    	<td><a href="{% url 'update-brokerage' brokerage.id %}">{{brokerage.alias}}</a></td>
+    	<td>{{ brokerage.get_name_display }}</td>
+    	<td><small>{{ brokerage.created }}</small></td>
+		<td><small>{{ brokerage.updated }}</small></td>
+		<td>
+			<form method="post">
+	    		{% csrf_token %}
+				<input type="hidden" name="brokerage_id" value="{{ brokerage.id }}">
+	    		<button type="submit" name="run_connection">Fetch trades</button>
+			</form>
+		</td>
 		<td><button><a href="{% url 'delete-brokerage' brokerage.id %}">Delete</a></button></td>
     </tr>
     {% endfor %}

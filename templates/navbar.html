@@ -2,7 +2,7 @@
 	Trinfo
 </a>
 {% if request.user.is_authenticated %}
-<span>Hello, <a href="{% url 'profile' user.username %}">@{{request.user}}</a></span>
+<span>Hello, <a href="{% url 'profile' request.user.username %}">@{{request.user}}</a></span>
 <a href="{% url 'signout' %}">Logout</a>
 {% else %}
 <a href="{% url 'signin' %}">Login</a>
@@ -11,9 +11,9 @@
 
 {% if messages %}
 <ul class="messages">
-	{% for message in messages %}
+	<!--{% for message in messages %}-->
 	<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-	{% endfor %}
+	<!--{% endfor %}-->
 </ul>
 {% endif %}
 
