@@ -1,22 +1,53 @@
 {% extends 'main.html' %}
 
 {% block content %}
-<h1>Trades</h1>
-<button><a href="/trades">Trades by day</a></button>
-<button><a href="/trades_by_week">Trades by week</a></button>
-<button><a href="/trades_by_month">Trades by month</a></button>
+{% if timeframe == "day" %}
+    <h1>Trades by Day</h1>
+{% elif timeframe == "week" %}
+    <h1>Trades by Week</h1>
+{% elif timeframe == "month" %}
+    <h1>Trades by Month</h1>
+{% else %}
+    <h1>Trades by day</h1>
+{% endif %}
+<button><a href="{% url 'trades_by_timeframe' timeframe='day'%}">Trades by day</a></button>
+<button><a href="{% url 'trades_by_timeframe' timeframe='week'%}" >Trades by week</a></button>
+<button><a href="{% url 'trades_by_timeframe' timeframe='month'%}">Trades by month</a></button>
 {% for group in grouped_trades_with_stats %}
-<h2>{{ group.date|date:"Y-m-d" }}</h2>
+    {% if timeframe == "day" %}
+        <h2>{{ group.date|date:"Y-m-d" }}</h2>
+    {% elif timeframe == "week" %}
+        <h2>Week of {{ group.date|date:"Y-W" }}</h2>
+    {% elif timeframe == "month" %}
+        <h2>{{ group.date|date:"Y F" }}</h2>
+    {% else %}
+        <h2>{{ group.date|date:"Y-m-d" }}</h2>
+    {% endif %}
 
 <!-- Displaying the sums -->
-<p><strong>Total Quantity of Orders:</strong> {{ group.stats.total_quantity_of_orders }}</p>
+<!-- Displaying the sums -->
 <p><strong>Total Trade Result:</strong> {{ group.stats.total_trade_result|floatformat:2 }}</p>
-<p><strong>Total Brokerage Commission:</strong> {{ group.sums.total_trade_brokerage_commission|floatformat:2 }}</p>
+<p><strong>Total Trade Result Percentage:</strong> {{ group.stats.total_trade_result_percentage|floatformat:2 }}%</p>
+<p><strong>Average Trade Money:</strong> {{ group.stats.average_trade_money|floatformat:2 }}</p>
+<p><strong>Win rate:</strong> {{ group.stats.win_rate|floatformat:2 }}%</p>
 <p><strong>Total Trade Money:</strong> {{ group.stats.total_trade_money|floatformat:2 }}</p>
+
 <p><strong>Total Money Won:</strong> {{ group.stats.total_money_win|floatformat:2 }}</p>
+<p><strong>Percentage of Money Won:</strong> {{ group.stats.total_money_win_percentage|floatformat:2 }}%</p>
+<p><strong>Total Money in Winning Trades:</strong> {{ group.stats.total_trade_money_when_win|floatformat:2 }}</p>
+<p><strong>Total Trades Won:</strong> {{ group.stats.total_trades_win }}</p>
+
 <p><strong>Total Money Lost:</strong> {{ group.stats.total_money_loss|floatformat:2 }}</p>
-<p><strong>Total Trades Won:</strong> {{ group.stats.total_trade_win }}</p>
-<p><strong>Total Trades Lost:</strong> {{ groupstats.total_trade_loss }}</p>
+<p><strong>Percentage of Money Lost:</strong> {{ group.stats.total_money_loss_percentage|floatformat:2 }}%</p>
+<p><strong>Total Money in Losing Trades:</strong> {{ group.stats.total_trade_money_when_loss|floatformat:2 }}</p>
+<p><strong>Total Trades Lost:</strong> {{ group.stats.total_trades_loss }}</p>
+
+<p><strong>Total Quantity of Trades:</strong> {{ group.stats.total_of_trades }}</p>
+<p><strong>Total Quantity of Orders:</strong> {{ group.stats.total_of_orders }}</p>
+<p><strong>Total Brokerage Commission:</strong> {{ group.stats.total_trade_brokerage_commission|floatformat:2 }}</p>
+
+
+
 <table>
         <thead>
             <tr>

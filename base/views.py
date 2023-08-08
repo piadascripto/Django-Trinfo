@@ -197,37 +197,26 @@ from .utils import calculate_trades_stats
 
 
 
-def trades(request):
-    trades = Trade.objects.all().annotate(date_close_date=TruncDate('date_close')).order_by('date_close_date')
-    
-    # Use the string 'date_close_date' directly
-    stats_dict = calculate_trades_stats(trades, 'date_close_date')
+def trades_by_timeframe(request, timeframe="day"):
+    if timeframe == "day":
+        trades = Trade.objects.all().annotate(date_close_truncate=TruncDate('date_close'))
+    elif timeframe == "week":
+        trades = Trade.objects.all().annotate(date_close_truncate=TruncWeek('date_close'))
+    elif timeframe == "month":
+        trades = Trade.objects.all().annotate(date_close_truncate=TruncMonth('date_close'))
+    else:
+        trades = Trade.objects.all().annotate(date_close_truncate=TruncDate('date_close'))
 
-    grouped_trades_with_stats = [{'date': key, 'trades': list(group), 'stats': stats_dict[key]} for key, group in groupby(trades, key=lambda x: x.date_close_date)]
+    trades = trades.order_by('-date_close_truncate')
+    stats_dict = calculate_trades_stats(trades, 'date_close_truncate')
+    grouped_trades_with_stats = [{'date': key, 'trades': list(group), 'stats': stats_dict[key]} for key, group in groupby(trades, key=lambda x: x.date_close_truncate)]
+    context = {
+		'grouped_trades_with_stats': grouped_trades_with_stats,
+		'timeframe': timeframe}
 
-    
-    context = {'grouped_trades_with_stats': grouped_trades_with_stats}
-    
+    # Use a single template or decide the template based on the timeframe.
     return render(request, 'base/trades.html', context)
 
-
-
-
-def trades_by_week(request):
-    trades = Trade.objects.all().annotate(date_close_week=TruncWeek('date_close')).order_by('-date_close_week')
-
-    stats_dict = calculate_trades_stats(trades, 'date_close_week')
-    grouped_trades_with_stats = [{'date': key, 'trades': list(group), 'stats': stats_dict[key]} for key, group in groupby(trades, key=lambda x: x.date_close_week)]
-    context = {'grouped_trades_with_stats': grouped_trades_with_stats}
-    return render(request, 'base/trades_by_week.html', context)
-
-
-def trades_by_month(request):
-    trades = Trade.objects.all().annotate(date_close_month=TruncMonth('date_close')).order_by('-date_close_month')
-    stats_dict = calculate_trades_stats(trades, 'date_close_month')
-    grouped_trades_with_stats = [{'date': key, 'trades': list(group), 'stats': stats_dict[key]} for key, group in groupby(trades, key=lambda x: x.date_close_month)]
-    context = {'grouped_trades_with_stats': grouped_trades_with_stats}
-    return render(request, 'base/trades_by_month.html', context)
 
 
 

@@ -4,7 +4,9 @@ import requests
 import csv
 from django.db import transaction
 from django.contrib.auth.models import User
-from django.db.models import Sum, Count, Case, When, Value, F
+from django.db.models import Sum, Count, Case, When, Value, F, FloatField
+from django.db.models.functions import Cast
+
 
 
 @transaction.atomic
@@ -41,30 +43,53 @@ def save_orders_to_db(user_id, brokerage_id, orders):
 # Calculate sums
 def calculate_trades_stats(trades, timeframe):
     stats = trades.values(timeframe).annotate(
-        total_quantity_of_orders=Sum('quantity_of_orders'),
         total_trade_result=Sum('trade_result'),
-        total_trade_brokerage_commission=Sum('trade_brokerage_commission'),
         total_trade_money=Sum('trade_money'),
+        total_trade_result_percentage=F('total_trade_result') / F('total_trade_money') * 100,
+
+        total_trade_brokerage_commission=Sum('trade_brokerage_commission'),
+        
         total_money_win=Sum(Case(When(trade_result__gt=0, then=F('trade_result')), default=Value(0.0))),
+        total_trade_money_when_win=Sum(Case(When(trade_result__gt=0, then=F('trade_money')), default=Value(0.0))),
+        total_money_win_percentage=F('total_money_win') / F('total_trade_money_when_win') * 100,
+        
         total_money_loss=Sum(Case(When(trade_result__lt=0, then=F('trade_result')), default=Value(0.0))),
-        total_trade_win=Count(Case(When(trade_result__gt=0, then=1))),
-        total_trade_loss=Count(Case(When(trade_result__lt=0, then=1)))
+        total_trade_money_when_loss=Sum(Case(When(trade_result__lt=0, then=F('trade_money')), default=Value(0.0))),
+        total_money_loss_percentage=F('total_money_loss') / F('total_trade_money_when_loss') * 100,
+        
+        total_of_trades=Count('trade_money'),
+        total_of_orders=Sum('quantity_of_orders'),
+        total_trades_win=Count(Case(When(trade_result__gt=0, then=1))),
+        total_trades_loss=Count(Case(When(trade_result__lt=0, then=1))),
+        average_trade_money=F('total_trade_money') / F('total_of_trades'),
+        win_rate=Cast(F('total_trades_win'), FloatField()) / F('total_of_trades') * 100
+
+
     )
 
     stats_dict = {
         item[timeframe]: {
-            'total_quantity_of_orders': item['total_quantity_of_orders'], 
+            'total_trade_result_percentage': item['total_trade_result_percentage'],
             'total_trade_result': item['total_trade_result'],
-            'total_trade_brokerage_commission': item['total_trade_brokerage_commission'],
             'total_trade_money': item['total_trade_money'],
+            'average_trade_money': item['average_trade_money'],
+            'total_trade_brokerage_commission': item['total_trade_brokerage_commission'],
             'total_money_win': item['total_money_win'],
+            'total_trade_money_when_win': item['total_trade_money_when_win'],
+            'total_money_win_percentage': item['total_money_win_percentage'],
             'total_money_loss': item['total_money_loss'],
-            'total_trade_win': item['total_trade_win'],
-            'total_trade_loss': item['total_trade_loss']
+            'total_trade_money_when_loss': item['total_trade_money_when_loss'],
+            'total_money_loss_percentage': item['total_money_loss_percentage'],
+            'total_of_trades': item['total_of_trades'],
+            'total_of_orders': item['total_of_orders'], 
+            'total_trades_win': item['total_trades_win'],
+            'total_trades_loss': item['total_trades_loss'],
+            'win_rate': item['win_rate']
         } for item in stats
     }
     
     return stats_dict
+
 
 
 
