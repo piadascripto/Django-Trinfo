@@ -36,7 +36,7 @@ class Brokerage(models.Model):
 class Order(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
 	brokerage = models.ForeignKey(Brokerage, on_delete=models.CASCADE) #turn SET NULL after testing
-	client_brokerage_account_id = models.CharField(max_length=20)
+	client_brokerage_account_id = models.CharField(max_length=20, null=True)
 	listing_exchange = models.CharField(max_length=20)
 	asset_class = models.CharField(max_length=20)
 	symbol = models.CharField(max_length=10)
@@ -44,12 +44,12 @@ class Order(models.Model):
 	date_time = models.DateTimeField()
 	time_zone = models.CharField(max_length=5)
 	buy_sell = models.CharField(max_length=5)
-	open_close = models.CharField(max_length=5)
+	open_close = models.CharField(max_length=5) #binance não tem 
 	quantity = models.FloatField()
-	currency_primary = models.CharField(max_length=8)
+	currency = models.CharField(max_length=10, null=True)
 	order_price = models.FloatField()
 	order_money = models.FloatField()
-	brokerage_commission = models.FloatField()
+	brokerage_commission = models.FloatField(null=True)
 	net_money = models.FloatField()
 	updated = models.DateTimeField(auto_now=True)
 	created = models.DateTimeField(auto_now_add=True)

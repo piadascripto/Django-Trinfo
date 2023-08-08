@@ -1,48 +1,15 @@
 import logging
-import csv
+import json
 import requests
 from datetime import datetime as dt
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
-from io import StringIO
 from pprint import pprint
 from django.contrib.auth.models import User
 from base.models import Order, Brokerage
+from base.utils import parse_csv_to_dict, fetch_page_content, save_orders_to_db
 
 logging.basicConfig(level=logging.INFO)
-
-
-def parse_csv_to_dict(csv_string): #move this to utils.py
-	csv_file = StringIO(csv_string)
-	reader = csv.reader(csv_file)
-	unique_rows = set()
-	deduped_data = []
-	for row in reader:
-		if not row:
-			continue
-		row_tuple = tuple(row)
-		if row_tuple not in unique_rows:
-			deduped_data.append(row)
-			unique_rows.add(row_tuple)
-	headers = deduped_data[0]
-	
-	return [dict(zip(headers, row)) for row in deduped_data[1:]]
-
-
-def fetch_page_content(url): #move this to utils.py
-	try:
-		response = requests.get(url)
-		response.raise_for_status()
-		return response.content, None
-	except requests.HTTPError as http_err:
-		error_msg = f"HTTP error occurred: {http_err}"
-		logging.error(error_msg)
-		return None, error_msg
-	except Exception as err:
-		error_msg = f"An error occurred: {err}"
-		logging.error(error_msg)
-		return None, error_msg
-
 
 def connection_interactive_brokers(user_id, brokerage_id, IBKR_user_token, IBKR_user_query):
 
@@ -56,12 +23,18 @@ def connection_interactive_brokers(user_id, brokerage_id, IBKR_user_token, IBKR_
 		IBKR_code = soup.find("code").text.strip() if soup.find("code") else None
 		if IBKR_code:
 			user_query_url = f"https://www.interactivebrokers.com/Universal/servlet/FlexStatementService.GetStatement?q={IBKR_code}&t={IBKR_user_token}&v=2"
+			
             #DEBUGGING
-            #print(user_query_url)
+			#print(user_query_url)
+		
 			IBKR_user_orders, error = fetch_page_content(user_query_url)
 			if not error and IBKR_user_orders:
 				orders_data = parse_csv_to_dict(IBKR_user_orders.decode('utf-8'))
-                
+
+				#DEBUGGING
+				#with open('orders_data.json', 'w') as f:
+				#	json.dump(orders_data , f, indent=4)
+
 				return orders_data
 			else:
 				logging.error("Error fetching user orders.")
@@ -73,6 +46,7 @@ def connection_interactive_brokers(user_id, brokerage_id, IBKR_user_token, IBKR_
 	def process_fetched_data(orders_data):
 		processed_data = []
 		for record in orders_data:
+			
 			required_fields = ['ClientAccountID', 'AssetClass', 'Symbol', 'TradeID', 'Buy/Sell', 'Open/CloseIndicator', 'Quantity', 'CurrencyPrimary', 'TradePrice', 'TradeMoney', 'IBCommission', 'NetCash']
 			for field in required_fields:
 				if not record.get(field):
@@ -126,50 +100,28 @@ def connection_interactive_brokers(user_id, brokerage_id, IBKR_user_token, IBKR_
 				'symbol': record['Symbol'].upper(),
 				'brokerage_order_id': record['TransactionID'],
 				'date_time': date_time_obj,
-				'timezone': timezone,
+				'time_zone': timezone,
 				'buy_sell': record['Buy/Sell'].lower(),
 				'open_close': open_close,
 				'quantity': float(record['Quantity']),
-				'currency_primary': record['CurrencyPrimary'].upper(),
+				'currency': record['CurrencyPrimary'].upper(),
 				'order_price': float(record['TradePrice']),
 				'order_money': float(record['TradeMoney']),
 				'brokerage_commission': float(record['IBCommission']),
 				'net_money': float(record['NetCash'])
 			}
 			processed_data.append(processed_record)
-        
+			
+			#DEBUGGING
+			#with open('processed_data.json', 'w') as f:
+			#	json.dump(processed_data, f, indent=4)
+
+		
 		return processed_data
 
-	@transaction.atomic
-	def save_orders_to_db(user_id, brokerage_id, orders):
-		logging.info(f"Saving orders to database for user: {user_id}")
-		for record in orders:
-			order, created = Order.objects.get_or_create(
-				brokerage_order_id=record['brokerage_order_id'],
-				defaults={
-					'user': User.objects.get(id=user_id), 
-					'brokerage': brokerage_id,
-					'client_brokerage_account_id': record['client_brokerage_account_id'],
-					'listing_exchange': record['listing_exchange'],
-					'asset_class': record['asset_class'],
-					'symbol': record['symbol'], 
-					'date_time': record['date_time'],
-					'time_zone': record['timezone'], 
-					'buy_sell': record['buy_sell'], 
-					'open_close': record['open_close'],
-					'quantity': record['quantity'], 
-					'currency_primary': record['currency_primary'], 
-					'order_price': record['order_price'],
-					'order_money': record['order_money'],
-					'brokerage_commission': record['brokerage_commission'],
-					'net_money': record['net_money'],
-				}
-			)
-			if created:
-				logging.info(f"New order created: {order}")
 
 	processed_data = process_fetched_data(fetch_orders())
-	save_orders_to_db(user_id, processed_data)
+	save_orders_to_db(user_id,  brokerage_id, processed_data)
 				
 
 class Command(BaseCommand):
@@ -191,6 +143,5 @@ class Command(BaseCommand):
 
 
 #Testing
-
-#data = connection_interactive_brokers(1, 135962967293328323184330, 830297)
+#data = connection_interactive_brokers(1, 5, 135962967293328323184330, 830297)
 #pprint(data)
