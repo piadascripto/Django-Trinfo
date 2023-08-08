@@ -4,7 +4,8 @@ import requests
 import csv
 from django.db import transaction
 from django.contrib.auth.models import User
-from base.models import Order, Brokerage
+from django.db.models import Sum, Count, Case, When, Value, F
+
 
 @transaction.atomic
 def save_orders_to_db(user_id, brokerage_id, orders):
@@ -34,6 +35,39 @@ def save_orders_to_db(user_id, brokerage_id, orders):
 		)
 		if created:
 			logging.info(f"New order created: {order}")
+
+
+
+# Calculate sums
+def calculate_trades_stats(trades, timeframe):
+    stats = trades.values(timeframe).annotate(
+        total_quantity_of_orders=Sum('quantity_of_orders'),
+        total_trade_result=Sum('trade_result'),
+        total_trade_brokerage_commission=Sum('trade_brokerage_commission'),
+        total_trade_money=Sum('trade_money'),
+        total_money_win=Sum(Case(When(trade_result__gt=0, then=F('trade_result')), default=Value(0.0))),
+        total_money_loss=Sum(Case(When(trade_result__lt=0, then=F('trade_result')), default=Value(0.0))),
+        total_trade_win=Count(Case(When(trade_result__gt=0, then=1))),
+        total_trade_loss=Count(Case(When(trade_result__lt=0, then=1)))
+    )
+
+    stats_dict = {
+        item[timeframe]: {
+            'total_quantity_of_orders': item['total_quantity_of_orders'], 
+            'total_trade_result': item['total_trade_result'],
+            'total_trade_brokerage_commission': item['total_trade_brokerage_commission'],
+            'total_trade_money': item['total_trade_money'],
+            'total_money_win': item['total_money_win'],
+            'total_money_loss': item['total_money_loss'],
+            'total_trade_win': item['total_trade_win'],
+            'total_trade_loss': item['total_trade_loss']
+        } for item in stats
+    }
+    
+    return stats_dict
+
+
+
 
 def parse_csv_to_dict(csv_string): #move this to utils.py
 	csv_file = StringIO(csv_string)
@@ -66,3 +100,20 @@ def fetch_page_content(url): #move this to utils.py
 		logging.error(error_msg)
 		return None, error_msg
 
+# Maybe change and use lib Arrow (import arrow)
+def time_difference_simplifier(initial_date, end_date):
+	time_difference = end_date - initial_date
+	if time_difference.total_seconds() < 60:  # Less than 60 minutes
+		seconds_apart = time_difference.total_seconds()
+		time_difference_simplify = str(int(seconds_apart)) + " second" + ("s" if seconds_apart != 1 else "")
+	elif time_difference.total_seconds() < 3600:  # Less than 60 minutes
+		minutes_apart = time_difference.total_seconds() // 60
+		time_difference_simplify = str(int(minutes_apart)) + " minute" + ("s" if minutes_apart != 1 else "")
+	elif initial_date.date() == end_date.date():  # Same day
+		hours_apart = time_difference.total_seconds() // 3600
+		time_difference_simplify = str(int(hours_apart)) + " hour" + ("s" if hours_apart != 1 else "") 
+	else:  # Different days
+		days_apart = (end_date.date() - initial_date.date()).days
+		time_difference_simplify = str(days_apart) + " day" + ("s" if days_apart != 1 else "")
+
+	return time_difference_simplify

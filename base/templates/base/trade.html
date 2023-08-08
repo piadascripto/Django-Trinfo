@@ -1,0 +1,86 @@
+{% extends 'main.html' %}
+
+{% block content %}
+<h1>Trade Details for {{ trade.symbol }}</h1>
+
+<table border="1">
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Long/Short</th>
+            <th>Win/Loss</th>
+            <th>Quantity of Orders</th>
+            <th>Quantity Trade Asset</th>
+            <th>Trade Money</th>
+            <th>Trade Result</th>
+            <th>Trade Result Percentage</th>
+            <th>Trade Brokerage Commission</th>
+            <th>Date Open</th>
+            <th>Date Close</th>
+            <th>Holding Time</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>{{ trade.symbol }}</td>
+            <td>{{ trade.long_short }}</td>
+            <td>{{ trade.win_loss }}</td>
+            <td>{{ trade.quantity_of_orders }}</td>
+            <td>{{ trade.quantity_trade_asset }}</td>
+            <td>{{ trade.trade_money|floatformat:2 }}</td>
+            <td>{{ trade.trade_result|floatformat:2 }}</td>
+            <td>{{ trade.trade_result_percentage|floatformat:2 }}</td>
+            <td>{{ trade.trade_brokerage_commission|floatformat:2 }}</td>
+            <td>{{ trade.date_open }}</td>
+            <td>{{ trade.date_close }}</td>
+            <td>{{ trade.holding_time }}</td>
+        </tr>
+
+    </tbody>
+</table>
+
+<h2>Orders Associated with this Trade</h2>
+<table border="1">
+    <thead>
+        <tr>
+            <th>Listing Exchange</th>
+            <th>Asset Class</th>
+            <th>Symbol</th>
+            <th>Date Time</th>
+            <th>Time Zone</th>
+            <th>Buy/Sell</th>
+            <th>Open/Close</th>
+            <th>Quantity</th>
+            <th>Currency</th>
+            <th>Order Price</th>
+            <th>Order Money</th>
+            <th>Brokerage Commission</th>
+            <th>Net Money</th>
+            <th>Processed</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in trade.orders.all %}
+        <tr>
+            <td>{{ order.listing_exchange }}</td>
+            <td>{{ order.asset_class }}</td>
+            <td>{{ order.symbol }}</td>
+            <td>{{ order.date_time }}</td>
+            <td>{{ order.time_zone }}</td>
+            <td>{{ order.buy_sell }}</td>
+            <td>{{ order.open_close }}</td>
+            <td>{{ order.quantity }}</td>
+            <td>{{ order.currency }}</td>
+            <td>{{ order.order_price }}</td>
+            <td>{{ order.order_money|floatformat:2  }}</td>
+            <td>{{ order.brokerage_commission|floatformat:2  }}</td>
+            <td>{{ order.net_money|floatformat:2 }}</td>
+            <td>{{ order.processed }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+
+{% endblock %}

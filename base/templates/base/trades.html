@@ -1,0 +1,59 @@
+{% extends 'main.html' %}
+
+{% block content %}
+<h1>Trades</h1>
+<button><a href="/trades">Trades by day</a></button>
+<button><a href="/trades_by_week">Trades by week</a></button>
+<button><a href="/trades_by_month">Trades by month</a></button>
+{% for group in grouped_trades_with_stats %}
+<h2>{{ group.date|date:"Y-m-d" }}</h2>
+
+<!-- Displaying the sums -->
+<p><strong>Total Quantity of Orders:</strong> {{ group.stats.total_quantity_of_orders }}</p>
+<p><strong>Total Trade Result:</strong> {{ group.stats.total_trade_result|floatformat:2 }}</p>
+<p><strong>Total Brokerage Commission:</strong> {{ group.sums.total_trade_brokerage_commission|floatformat:2 }}</p>
+<p><strong>Total Trade Money:</strong> {{ group.stats.total_trade_money|floatformat:2 }}</p>
+<p><strong>Total Money Won:</strong> {{ group.stats.total_money_win|floatformat:2 }}</p>
+<p><strong>Total Money Lost:</strong> {{ group.stats.total_money_loss|floatformat:2 }}</p>
+<p><strong>Total Trades Won:</strong> {{ group.stats.total_trade_win }}</p>
+<p><strong>Total Trades Lost:</strong> {{ groupstats.total_trade_loss }}</p>
+<table>
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Long/Short</th>
+                <th>Win/Loss</th>
+                <th>Quantity of Orders</th>
+                <th>Quantity Trade Asset</th>
+                <th>Trade Money</th>
+                <th>Trade Result</th>
+                <th>Trade Result Percentage</th>
+                <th>Trade Brokerage Commission</th>
+                <th>Date Open</th>
+                <th>Date Close</th>
+                <th>Holding Time</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for trade in group.trades %}
+            <tr>
+                <td>{{ trade.symbol }}</td>
+                <td>{{ trade.long_short }}</td>
+                <td>{{ trade.win_loss }}</td>
+                <td>{{ trade.quantity_of_orders }}</td>
+                <td>{{ trade.quantity_trade_asset }}</td>
+                <td>{{ trade.trade_money|floatformat:2 }}</td>
+                <td>{{ trade.trade_result|floatformat:2 }}</td>
+                <td>{{ trade.trade_result_percentage|floatformat:2 }}</td>
+                <td>{{ trade.trade_brokerage_commission|floatformat:2 }}</td>
+                <td>{{ trade.date_open }}</td>
+                <td>{{ trade.date_close }}</td>
+                <td>{{ trade.holding_time }}</td>
+                <td><a href="{% url 'trade' trade.id %}">View Orders</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endfor %}
+{% endblock %}

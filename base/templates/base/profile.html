@@ -39,16 +39,39 @@
 {% endif %}
 
 	<h2>Last Orders</h2>
-	<div>
-		{% for order in order %}
-			<div>
-				<a href="{% url 'profile' order.user.username%}"><span>@{{order.user.username}}</span></a>
-				<a href="/order/{{order.id}}"><h5>{{order.symbol}}: {{order.buy_sell}}</h5></a>
-				<small>{{order.created}}</small>
-				<hr>
-				
-			</div>
-		{% endfor %}
-	</div>
+	<table border="1">
+    <thead>
+        <tr>
+			<th>Brokerage</th>
+			<th>Asset Class</th>
+            <th>Symbol</th>
+            <th>Buy/Sell</th>
+            <th>Date Time</th>
+            <th>Open/Close</th>
+            <th>Quantity</th>
+            <th>Order Price</th>
+            <th>Order Money</th>
+            <th>Brokerage Commission</th>
+            <th>Net Money</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in order %} <!-- Fixed the loop variable -->
+            <tr>                
+				<td>{{ order.brokerage.get_name_display }}</td>
+				<td>{{ order.asset_class|capfirst }}</td>
+                <td><a href="/order/{{ order.id }}">{{ order.symbol }}</a></td>
+                <td>{{ order.buy_sell|capfirst }}</td>
+                <td>{{ order.date_time }}</td>
+                <td>{{ order.open_close|capfirst  }}</td>
+                <td>{{ order.quantity }}</td>
+                <td>{{ order.order_price }}</td>
+                <td>{{ order.currency }} {{ order.order_money|floatformat:2 }}</td>
+                <td>{{ order.currency }} {{ order.brokerage_commission|floatformat:2 }}</td>
+                <td>{{ order.currency }} {{ order.net_money|floatformat:2 }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
 {% endblock content %}

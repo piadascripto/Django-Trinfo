@@ -1,7 +1,7 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django import forms
 from django.http import HttpResponse
-from .models import Order, Tag, Brokerage
+from .models import Order, Tag, Brokerage, Trade
 from .forms import BrokerageForm
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm  #, AuthenticationForm
@@ -11,6 +11,15 @@ from django.contrib import messages
 from .management.commands.connection_interactive_brokers import connection_interactive_brokers
 from datetime import datetime
 from django.utils.timezone import make_aware
+from django.db.models import DateField, F
+from django.db.models.functions import Cast
+from django.shortcuts import render
+from django.views import View
+from django.db.models.functions import TruncDate
+from collections import defaultdict
+from pprint import pprint 
+
+
 
 # Home
 
@@ -177,3 +186,53 @@ def deleteBrokerage(request, pk):
         return redirect('profile', username=request.user.username)
     context = {'obj': brokerage}
     return render(request, 'base/delete.html', context)
+
+# Trades, order, journal, statistics 
+
+
+
+from itertools import groupby
+from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
+from .utils import calculate_trades_stats
+
+
+
+def trades(request):
+    trades = Trade.objects.all().annotate(date_close_date=TruncDate('date_close')).order_by('date_close_date')
+    
+    # Use the string 'date_close_date' directly
+    stats_dict = calculate_trades_stats(trades, 'date_close_date')
+
+    grouped_trades_with_stats = [{'date': key, 'trades': list(group), 'stats': stats_dict[key]} for key, group in groupby(trades, key=lambda x: x.date_close_date)]
+
+    
+    context = {'grouped_trades_with_stats': grouped_trades_with_stats}
+    
+    return render(request, 'base/trades.html', context)
+
+
+
+
+def trades_by_week(request):
+    trades = Trade.objects.all().annotate(date_close_week=TruncWeek('date_close')).order_by('-date_close_week')
+
+    stats_dict = calculate_trades_stats(trades, 'date_close_week')
+    grouped_trades_with_stats = [{'date': key, 'trades': list(group), 'stats': stats_dict[key]} for key, group in groupby(trades, key=lambda x: x.date_close_week)]
+    context = {'grouped_trades_with_stats': grouped_trades_with_stats}
+    return render(request, 'base/trades_by_week.html', context)
+
+
+def trades_by_month(request):
+    trades = Trade.objects.all().annotate(date_close_month=TruncMonth('date_close')).order_by('-date_close_month')
+    stats_dict = calculate_trades_stats(trades, 'date_close_month')
+    grouped_trades_with_stats = [{'date': key, 'trades': list(group), 'stats': stats_dict[key]} for key, group in groupby(trades, key=lambda x: x.date_close_month)]
+    context = {'grouped_trades_with_stats': grouped_trades_with_stats}
+    return render(request, 'base/trades_by_month.html', context)
+
+
+
+
+def trade(request, trade_id):
+    trade_detail = get_object_or_404(Trade, id=trade_id)
+    context = {'trade': trade_detail}
+    return render(request, 'base/trade.html', context)
