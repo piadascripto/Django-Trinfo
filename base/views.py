@@ -1,23 +1,32 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django import forms
-from django.http import HttpResponse
-from .models import Order, Tag, Brokerage, Trade
-from .forms import BrokerageForm
-from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm  #, AuthenticationForm
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login, logout, authenticate
-from django.contrib import messages
-from .management.commands.connection_interactive_brokers import connection_interactive_brokers
-from datetime import datetime
-from django.utils.timezone import make_aware
-from django.db.models import DateField, F
-from django.db.models.functions import Cast
-from django.shortcuts import render
-from django.views import View
-from django.db.models.functions import TruncDate
+#Python imports
 from collections import defaultdict
-from pprint import pprint 
+from datetime import datetime
+from itertools import groupby
+from pprint import pprint
+import plotly.graph_objs as go
+import plotly.offline as offline
+
+
+#Django imports
+from django import forms
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm  #, AuthenticationForm
+from django.contrib.auth.models import User
+from django.db.models import DateField, F
+from django.db.models.functions import Cast, TruncDate, TruncMonth, TruncWeek
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.timezone import make_aware
+#from django.views import View
+#Local imports
+from .forms import BrokerageForm
+from .management.commands.connection_interactive_brokers import connection_interactive_brokers
+from .models import Brokerage, Order, Tag, Trade
+from .utils import calculate_trades_stats, fetch_stocks_market_data
+
+
 
 
 
@@ -191,25 +200,30 @@ def deleteBrokerage(request, pk):
 
 
 
-from itertools import groupby
-from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
-from .utils import calculate_trades_stats
+
 
 
 
 def trades_by_timeframe(request, timeframe="day"):
-    if timeframe == "day":
-        trades = Trade.objects.all().annotate(date_close_truncate=TruncDate('date_close'))
-    elif timeframe == "week":
-        trades = Trade.objects.all().annotate(date_close_truncate=TruncWeek('date_close'))
-    elif timeframe == "month":
-        trades = Trade.objects.all().annotate(date_close_truncate=TruncMonth('date_close'))
+    
+    if timeframe == "all":
+        trades = Trade.objects.all().order_by('-date_close')
+        stats = calculate_trades_stats(trades, None)  # Assuming your function can handle None as the second argument
+        grouped_trades_with_stats = [{'date': None, 'trades': list(trades), 'stats': stats}]
     else:
-        trades = Trade.objects.all().annotate(date_close_truncate=TruncDate('date_close'))
+        if timeframe == "day":
+            trades = Trade.objects.all().annotate(date_close_truncate=TruncDate('date_close'))
+        elif timeframe == "week":
+            trades = Trade.objects.all().annotate(date_close_truncate=TruncWeek('date_close'))
+        elif timeframe == "month":
+            trades = Trade.objects.all().annotate(date_close_truncate=TruncMonth('date_close'))
+        else:
+            trades = Trade.objects.all().annotate(date_close_truncate=TruncDate('date_close'))
+        
+        trades = trades.order_by('-date_close_truncate')
+        stats_dict = calculate_trades_stats(trades, 'date_close_truncate')
+        grouped_trades_with_stats = [{'date': key, 'trades': list(group), 'stats': stats_dict[key]} for key, group in groupby(trades, key=lambda x: x.date_close_truncate)]
 
-    trades = trades.order_by('-date_close_truncate')
-    stats_dict = calculate_trades_stats(trades, 'date_close_truncate')
-    grouped_trades_with_stats = [{'date': key, 'trades': list(group), 'stats': stats_dict[key]} for key, group in groupby(trades, key=lambda x: x.date_close_truncate)]
     context = {
 		'grouped_trades_with_stats': grouped_trades_with_stats,
 		'timeframe': timeframe}
@@ -221,7 +235,78 @@ def trades_by_timeframe(request, timeframe="day"):
 
 
 
+
 def trade(request, trade_id):
+    # Your existing code to get trade details
     trade_detail = get_object_or_404(Trade, id=trade_id)
-    context = {'trade': trade_detail}
+    symbol = trade_detail.symbol
+    initial_date = trade_detail.date_open
+    end_date = trade_detail.date_close
+    time_zone = "UTC"  # TECHNICAL DEBT #trade_detail.orders.first().time_zone  # Get the timezone of the first order
+
+    # Sample bars_data and order_data for demonstration
+
+    try:
+        bars_data = fetch_stocks_market_data(symbol, initial_date, end_date, time_zone)
+        # DEBUGGING
+        #print("========================")
+        # print(bars_data)
+
+    except Exception as e:
+        print("========================")
+        print("Error fetching stock data:", str(e))
+    
+    order_data = trade_detail.orders.all().values('date_time', 'order_price', 'open_close')
+
+    # Create figure
+    fig = go.Figure(data=[go.Candlestick(
+        x=[item['t'] for item in bars_data],
+        open=[item['o'] for item in bars_data],
+        high=[item['h'] for item in bars_data],
+        low=[item['l'] for item in bars_data],
+        close=[item['c'] for item in bars_data],
+    )])
+    """
+    # Plot orders on the chart
+    open_orders = [order for order in order_data if order['open_close'] == 'open']
+    close_orders = [order for order in order_data if order['open_close'] == 'close']
+
+    fig.add_trace(go.Scatter(
+        x=[order['date_time'] for order in open_orders],
+        y=[order['order_price'] for order in open_orders],
+        mode='markers',
+        marker=dict(color='green', size=8),
+        name='Open Orders'
+    ))
+
+    # Commented out section starts here
+    fig.add_trace(go.Scatter(
+         x=[order['date_time'] for order in close_orders],
+         y=[order['order_price'] for order in close_orders],
+         mode='markers',
+         marker=dict(color='red', size=8),
+         name='Close Orders'
+     ))
+
+    fig.update_layout(
+        title=f'{symbol} Stock Price',
+        xaxis_title='Date',
+        yaxis_title='Price',
+        xaxis_rangeslider_visible=False
+	)
+    """
+    # DEBUGGING
+    #print("========================")
+    #print(trade_detail, bars_data, order_data)
+    
+    fig.show()
+
+    plot_div = offline.plot(fig, output_type='div', show_link=False)
+    
+    context = {
+        'trade': trade_detail,
+        'plot_div': plot_div,
+        # ... any other context data
+    }
+
     return render(request, 'base/trade.html', context)

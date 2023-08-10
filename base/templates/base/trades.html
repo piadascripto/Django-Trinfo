@@ -8,21 +8,25 @@
 {% elif timeframe == "month" %}
     <h1>Trades by Month</h1>
 {% else %}
-    <h1>Trades by day</h1>
+    <h1>All Trades</h1>
 {% endif %}
 <button><a href="{% url 'trades_by_timeframe' timeframe='day'%}">Trades by day</a></button>
 <button><a href="{% url 'trades_by_timeframe' timeframe='week'%}" >Trades by week</a></button>
 <button><a href="{% url 'trades_by_timeframe' timeframe='month'%}">Trades by month</a></button>
+<button><a href="{% url 'trades_by_timeframe' timeframe='all'%}">All Trades</a></button>
+
 {% for group in grouped_trades_with_stats %}
-    {% if timeframe == "day" %}
-        <h2>{{ group.date|date:"Y-m-d" }}</h2>
-    {% elif timeframe == "week" %}
-        <h2>Week of {{ group.date|date:"Y-W" }}</h2>
-    {% elif timeframe == "month" %}
-        <h2>{{ group.date|date:"Y F" }}</h2>
-    {% else %}
-        <h2>{{ group.date|date:"Y-m-d" }}</h2>
-    {% endif %}
+{% if timeframe == "day" %}
+    <h2>{{ group.date|date:"Y-m-d" }}</h2>
+{% elif timeframe == "week" %}
+    <h2>Week of {{ group.date|date:"Y-W" }}</h2>
+{% elif timeframe == "month" %}
+    <h2>{{ group.date|date:"Y F" }}</h2>
+{% elif timeframe == "all" %}
+
+{% else %}
+    <h2>{{ group.date|date:"Y-m-d" }}</h2>
+{% endif %}
 
 <!-- Displaying the sums -->
 <!-- Displaying the sums -->
